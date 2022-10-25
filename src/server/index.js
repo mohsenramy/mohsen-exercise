@@ -1,7 +1,8 @@
 const express = require("express");
 const server = express();
 const path = require("path");
-const port = process.env.PORT || 3000;
+const fetch = require("node-fetch");
+const port = process.env.PORT || 5000;
 
 server.listen(port, () => {
   console.log(`The app server is running on port: ${port}`);
@@ -20,4 +21,16 @@ server.get("/", (req, res) => {
       res.status(500).send(err);
     }
   });
+});
+
+server.get("/api", (req, res) => {
+  res.status(200).send({ status: "Ok" });
+});
+
+server.get("/api/postman-echo", async (req, res) => {
+  const proxRes = await fetch(
+    "https://postman-echo.com/get?foo1=bar1&foo2=bar2"
+  );
+  const result = await proxRes.json();
+  res.send(result);
 });

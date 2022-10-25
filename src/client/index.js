@@ -1,16 +1,14 @@
 import React from "react";
 import ReactDOM from "react-dom";
-import { BrowserRouter as Router, Route, Switch } from "react-router-dom";
-
+import { BrowserRouter } from "react-router-dom";
+import "./styles.css";
 import App from "./App.js";
-import "./styles.scss";
 
-const appRouting = (
-  <Router>
-    <Switch>
-      <Route exact path="/" component={App} />
-    </Switch>
-  </Router>
+// ReactDOM.render(<App />, document.getElementById("root"));
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <React.StrictMode>
+    <BrowserRouter>
+      <App />
+    </BrowserRouter>
+  </React.StrictMode>
 );
-
-ReactDOM.render(appRouting, document.getElementById("root"));

@@ -1,52 +1,71 @@
+// Generated using webpack-cli https://github.com/webpack/webpack-cli
+
 const path = require("path");
-const webpack = require("webpack");
-const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
+const MiniCssExtractPlugin = require("mini-css-extract-plugin");
+const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 
-const outputDirectory = "dist";
+const isProduction = process.env.NODE_ENV == "production";
 
-module.exports = {
+const stylesHandler = isProduction
+  ? MiniCssExtractPlugin.loader
+  : "style-loader";
+
+const config = {
   entry: "./src/client/index.js",
   output: {
-    filename: "bundle.js",
-    path: path.join(__dirname, outputDirectory),
-  },
-  module: {
-    rules: [
-      {
-        test: /\.(js|jsx)$/,
-        exclude: /node_modules/,
-        use: "babel-loader",
-      },
-      {
-        test: /\.html$/,
-        use: "html-loader",
-      },
-      /*Choose only one of the following two: if you're using 
-      plain CSS, use the first one, and if you're using a
-      preprocessor, in this case SASS, use the second one*/
-      {
-        test: /\.css$/,
-        use: ["style-loader", "css-loader"],
-      },
-      {
-        test: /\.scss$/,
-        use: ["style-loader", "css-loader", "sass-loader"],
-      },
-    ],
+    path: path.resolve(__dirname, "dist"),
   },
   devServer: {
     port: 3000,
     open: true,
+    // host: "localhost",
     proxy: {
       "/api": "http://localhost:5000",
     },
+    contentBase:
   },
   plugins: [
-    new CleanWebpackPlugin([outputDirectory]),
     new HtmlWebpackPlugin({
       template: "./public/index.html",
-      favicon: "./public/favicon.ico",
     }),
+    new CleanWebpackPlugin(),
+    // Add your plugins here
+    // Learn more about plugins from https://webpack.js.org/configuration/plugins/
   ],
+  module: {
+    rules: [
+      {
+        test: /\.(js|jsx)$/i,
+        exclude: /node_modules/,
+        loader: "babel-loader",
+      },
+      {
+        test: /\.s[ac]ss$/i,
+        use: [stylesHandler, "css-loader", "postcss-loader", "sass-loader"],
+      },
+      {
+        test: /\.css$/i,
+        use: [stylesHandler, "css-loader", "postcss-loader"],
+      },
+      {
+        test: /\.(eot|svg|ttf|woff|woff2|png|jpg|gif)$/i,
+        type: "asset",
+      },
+
+      // Add your rules for custom modules here
+      // Learn more about loaders from https://webpack.js.org/loaders/
+    ],
+  },
+};
+
+module.exports = () => {
+  if (isProduction) {
+    config.mode = "production";
+
+    config.plugins.push(new MiniCssExtractPlugin());
+  } else {
+    config.mode = "development";
+  }
+  return config;
 };
