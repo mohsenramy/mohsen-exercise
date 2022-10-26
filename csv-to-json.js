@@ -1,16 +1,15 @@
 // / require csvtojson
 var csv = require("csvtojson");
 const fs = require("fs");
+const { pool } = require("./src/server/utils/db.config");
+const format = require("pg-format");
+const { resourceLimits } = require("worker_threads");
 
-function getObjKey(obj, value) {
-  return Object.keys(obj).find((key) => obj[key] === value);
-}
-
-function createOpeningData(day, from, to) {
+function createOpeningsRecord(day, open, close) {
   return {
     day: day,
-    from: from,
-    to: to,
+    open: open,
+    close: close,
   };
 }
 
@@ -18,7 +17,7 @@ function formatOpeningHours(hour, minutes) {
   return `${hour}:${minutes}`;
 }
 
-function parsTimeEntry(entry) {
+function parseTimeEntry(entry) {
   let parts = entry.split("_");
   let hours = parts[0].split(":")[0];
   let mins = parts[0].split(":")[1] || "00";
@@ -26,6 +25,34 @@ function parsTimeEntry(entry) {
   hours = parts[1] === "pm" ? parseInt(hours) + 12 : hours;
   // console.log("->time: " + formatOpeningHours(hours, mins));
   return formatOpeningHours(hours, mins);
+}
+
+function parseDayEntry(entry, opHrs) {
+  try {
+    let openDays = entry.toUpperCase().replace(/,/g, "").split("-");
+    // console.log({ openDays }, openDays.length);
+    let dOpen = [];
+    if (openDays.length === 1) {
+      dOpen = [createOpeningsRecord(DAYS[openDays[0]], opHrs[1], opHrs[0])];
+    } else if (openDays.length > 1) {
+      // console.log("---------->DAYS", DAYS["THU"], openDays[1]);
+      let daysCount = DAYS[openDays[1]] - DAYS[openDays[0]] + 1;
+      // console.log({ daysCount });
+      const opDaysArr = Array.from(
+        new Array(daysCount),
+        (x, i) => i + DAYS[openDays[0]]
+      );
+
+      dOpen = opDaysArr.map((d) => {
+        // console.log({ d }, daysArr[d - 1]);
+        return createOpeningsRecord(d, opHrs[1], opHrs[0]);
+      });
+    }
+    // console.log({ dOpen });
+    return dOpen;
+  } catch (error) {
+    console.log({ error });
+  }
 }
 const DAYS = {
   MON: 1,
@@ -38,18 +65,54 @@ const DAYS = {
 };
 const daysArr = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
-const readableStream = fs.createReadStream("./restaurants3.csv", {
+const readableStream = fs.createReadStream("./restaurants.csv", {
   encoding: "utf8",
 });
+const insertRestaurantsData = async (restaurant) => {
+  pool
+    .query(
+      `INSERT INTO restaurants (name) VALUES ($1) RETURNING restaurant_id`,
+      [restaurant.name]
+    )
+    .then((results) => {
+      console.log(results.rows[0]);
+      const restaurantId = results.rows[0].restaurant_id;
+      const values = restaurant.openingHours.map((obj) => [
+        restaurantId,
+        obj.day,
+        obj.open,
+        obj.close,
+      ]);
+      console.log({ values });
+      pool
+        .query(
+          format(
+            "INSERT INTO openingtimes (restaurant_id,day,open,close) VALUES %L",
+            values
+          ),
+          []
+        )
+        .then((results) => {
+          console.log({ rowCount: results.rowCount });
+        })
+        .catch((e) => {
+          throw e;
+        });
+    })
+    .catch((e) => {
+      throw e;
+    });
+};
+
 csv({
   noheader: true,
   headers: ["name", "openingHours"],
 })
   .fromStream(readableStream)
-  .subscribe(function (jsonObj) {
+  .subscribe((jsonObj) => {
     //single json object will be emitted for each csv line
     // parse each json asynchronousely
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
       let hours = jsonObj.openingHours
         .replace(/\sam/g, "_am")
         .replace(/\spm/g, "_pm")
@@ -58,7 +121,7 @@ csv({
         .split("/");
       hours = hours.map((record) => record.trim().split(" "));
 
-      console.log({ hours });
+      // console.log({ hours });
       const dbObject = {
         name: jsonObj.name,
         openingHours: hours,
@@ -70,77 +133,32 @@ csv({
         opHrs = [];
         record.reverse().forEach((entry) => {
           // console.log({ opDys }, { opHrs });
-          console.log("\n----", { entry });
+          // console.log("\n----", { entry });
           if (entry !== "-") {
             // console.log(entry);
             if (entry.includes("_pm") || entry.includes("_am")) {
-              // let parts = entry.split("_");
-              // let hours = parts[0].split(":")[0];
-              // let mins = parts[0].split(":")[1] || "00";
-              // console.log({ mins });
-              // hours = parts[1] === "pm" ? parseInt(hours) + 12 : hours;
-              // console.log("->time: " + formatOpeningHours(hours, mins));
-              opHrs.push(parsTimeEntry(entry));
-            }
-            // if (entry.includes("_am")) {
-            //   let parts = entry.split("_");
-            //   let hours = parts[0].split(":")[0];
-            //   let mins = parts[0].split(":")[1] || "00";
-            //   console.log({ mins });
-            //   console.log("->time: " + hours + ":" + mins);
-            //   opHrs.push(hours + ":" + mins);
-            // }
-            if (daysArr.some((d) => entry.toUpperCase().includes(d))) {
-              // console.log("DayEntry: " + entry);
-              let openDays = entry.toUpperCase().replace(/,/g, "").split("-");
-              console.log({ openDays }, openDays.length);
-              let dOpen;
-              if (openDays.length === 1) {
-                opDys.push(
-                  createOpeningData(DAYS[openDays[0]], opHrs[1], opHrs[0])
-                );
-              } else if (openDays.length > 1) {
-                // console.log("---------->DAYS", DAYS["THU"], openDays[1]);
-                let daysCount = DAYS[openDays[1]] - DAYS[openDays[0]] + 1;
-                console.log({ daysCount });
-                const opDaysArr = Array.from(
-                  new Array(daysCount),
-                  (x, i) => i + DAYS[openDays[0]]
-                );
-
-                dOpen = opDaysArr.forEach((d) => {
-                  console.log({ d }, daysArr[d - 1]);
-                  opDys.push(createOpeningData(d, opHrs[1], opHrs[0]));
-                });
-              }
+              opHrs.push(parseTimeEntry(entry));
+            } else if (daysArr.some((d) => entry.toUpperCase().includes(d))) {
+              let newDays = parseDayEntry(entry, opHrs);
+              opDys = [...opDys, ...newDays];
             }
           }
         });
       });
-      console.log({ opDys });
+      // console.log({ opDys: JSON.stringify(opDys, null, 2) });
+      let restaurant = { name: jsonObj.name, openingHours: opDys };
+      console.log(restaurant);
 
       // console.log(jsonObj);
       // console.log(dbObject);
       // resolve();
-      // asyncStoreToDb(json, function () {
-      //   resolve();
-      // });
+      insertRestaurantsData(restaurant)
+        .then(() => {
+          resolve();
+        })
+        .catch((e) => {
+          console.log(e);
+          reject();
+        });
     });
   });
-
-//Use async / await
-// const jsonArray=await csv().fromFile(filePath);
-// let arr = ["Mon-Thu,", "Sun", "9_am", "-", "10_pm"];
-// const index = arr.indexOf("-");
-// console.log(index);
-// arr.splice(index, 1);
-// console.log(arr);
-
-// const rec = ["Mon-Thu,", "Sun", "11:30_am", "-", "9_pm"];
-
-// const range = 'TUE-Fri'
-// const days = range.toUpperCase().split('-')
-// console.log(days)
-// let daysCount = DAYS[days[1]] - DAYS[days[0]] + 1
-// console.log(daysCount)
-// console.log(Array.from(new Array(daysCount), (x, i) => i + DAYS[days[0]]))
