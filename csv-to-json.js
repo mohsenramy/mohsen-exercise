@@ -4,6 +4,7 @@ const fs = require("fs");
 const { pool } = require("./src/server/utils/db.config");
 const format = require("pg-format");
 const { resourceLimits } = require("worker_threads");
+const { DAYS, daysArr } = require("./src/server/utils/constants");
 
 function createOpeningsRecord(day, open, close) {
   return {
@@ -19,11 +20,12 @@ function formatOpeningHours(hour, minutes) {
 
 function parseTimeEntry(entry) {
   let parts = entry.split("_");
-  let hours = parts[0].split(":")[0];
+  let hours = parseInt(parts[0].split(":")[0]);
   let mins = parts[0].split(":")[1] || "00";
   // console.log({ mins });
-  hours = parts[1] === "pm" ? parseInt(hours) + 12 : hours;
-  // console.log("->time: " + formatOpeningHours(hours, mins));
+  hours = parts[1] === "pm" && hours < 12 ? hours + 12 : hours;
+  hours = parts[1] === "am" && hours === 12 ? 0 : hours;
+  console.log("->time: " + formatOpeningHours(hours, mins));
   return formatOpeningHours(hours, mins);
 }
 
@@ -35,9 +37,19 @@ function parseDayEntry(entry, opHrs) {
     if (openDays.length === 1) {
       dOpen = [createOpeningsRecord(DAYS[openDays[0]], opHrs[1], opHrs[0])];
     } else if (openDays.length > 1) {
-      // console.log("---------->DAYS", DAYS["THU"], openDays[1]);
+      console.log("---------->DAYS", DAYS[openDays[0]], openDays[0]);
+      console.log("---------->DAYS", DAYS[openDays[1]], openDays[1]);
+      // let daysCount = 0;
+      // let startDay = 0;
+      // if (DAYS[openDays[1]] > DAYS[openDays[0]]) {
+      //   daysCount = DAYS[openDays[1]] - DAYS[openDays[0]] + 1;
+      //   startDay = DAYS[openDays[0]];
+      // } else {
+      //   daysCount = DAYS[openDays[0]] - DAYS[openDays[1]] + 1;
+      //   startDay = DAYS[openDays[1]];
+      // }
       let daysCount = DAYS[openDays[1]] - DAYS[openDays[0]] + 1;
-      // console.log({ daysCount });
+      console.log({ daysCount });
       const opDaysArr = Array.from(
         new Array(daysCount),
         (x, i) => i + DAYS[openDays[0]]
@@ -54,16 +66,16 @@ function parseDayEntry(entry, opHrs) {
     console.log({ error });
   }
 }
-const DAYS = {
-  MON: 1,
-  TUE: 2,
-  WED: 3,
-  THU: 4,
-  FRI: 5,
-  SAT: 6,
-  SUN: 7,
-};
-const daysArr = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+// const DAYS = {
+//   MON: 1,
+//   TUE: 2,
+//   WED: 3,
+//   THU: 4,
+//   FRI: 5,
+//   SAT: 6,
+//   SUN: 7,
+// };
+// const daysArr = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 
 const readableStream = fs.createReadStream("./restaurants.csv", {
   encoding: "utf8",

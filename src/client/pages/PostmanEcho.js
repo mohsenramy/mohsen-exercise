@@ -31,7 +31,6 @@ const PostmanEcho = () => {
         {!loading && data && (
           <div>
             <h3>status: {resStatus}</h3>
-            <div>{JSON.stringify(data, null, 2)}</div>
             {data.args && <ItemGroup title={"Arguments"} items={data.args} />}
             {data.headers && (
               <ItemGroup title={"Headers"} items={data.headers} />

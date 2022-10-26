@@ -9,6 +9,7 @@ export default function Navbar() {
       </Link>
       <ul>
         <CustomLink to="/postman-echo">Postman Echo</CustomLink>
+        <CustomLink to="/restaurants">Restaurants</CustomLink>
         <CustomLink to="/about">About</CustomLink>
       </ul>
     </nav>

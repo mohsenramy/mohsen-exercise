@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Navbar from "./Components/Navbar";
 import About from "./pages/About";
 import PostmanEcho from "./pages/PostmanEcho";
+import Restaurants from "./pages/Restaurants";
 import Welcome from "./pages/Welcome";
 
 const App = () => {
@@ -14,6 +15,7 @@ const App = () => {
         <Routes>
           <Route path="/" element={<Welcome />} />
           <Route path="/postman-echo" element={<PostmanEcho />} />
+          <Route path="/restaurants" element={<Restaurants />} />
           <Route path="/about" element={<About />} />
         </Routes>
       </div>

@@ -2,6 +2,9 @@ const express = require("express");
 const server = express();
 const path = require("path");
 const fetch = require("node-fetch");
+const {
+  retrieveOpenRestaurants,
+} = require("./controllers/restaurant.controller");
 const port = process.env.PORT || 5000;
 
 server.listen(port, () => {
@@ -33,4 +36,9 @@ server.get("/api/postman-echo", async (req, res) => {
   );
   const result = await proxRes.json();
   res.send(result);
+});
+
+server.get("/api/restaurants/open/:day/:time", async (req, res) => {
+  console.log("-------", req.body);
+  return retrieveOpenRestaurants(req, res);
 });

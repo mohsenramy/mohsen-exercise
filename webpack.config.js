@@ -23,7 +23,8 @@ const config = {
     proxy: {
       "/api": "http://localhost:5000",
     },
-    contentBase:
+    // contentBase: path.resolve(__dirname, "dist"),
+    historyApiFallback: { index: "/", disableDotRule: true },
   },
   plugins: [
     new HtmlWebpackPlugin({
