@@ -9,6 +9,8 @@ import { DAYS, daysArray } from "../../server/utils/constants";
 import { useState } from "react";
 import axios from "axios";
 import RestaurantsList from "../Components/RestaurantsList";
+import { Box, Button } from "@mui/material";
+import { Stack } from "@mui/system";
 
 const weekDays = [
   "Monday",
@@ -84,27 +86,40 @@ export default function Restaurants() {
     <>
       <h1>Restaurants</h1>
 
-      <div>Select date & time</div>
-      <div>
-        <LocalizationProvider dateAdapter={AdapterDayjs}>
-          <DateTimePicker
-            renderInput={(props) => <TextField {...props} />}
-            label="DateTimePicker"
-            value={value}
-            onChange={(newValue) => {
-              setValue(newValue);
-            }}
-          />
-        </LocalizationProvider>
+      <div className="input-container">
+        <div
+          className="input-container-nested"
+          display={"flex"}
+          justifyContent={"center"}
+          alignContent={"center"}
+        >
+          <label>Select date & time:</label>
+          <LocalizationProvider dateAdapter={AdapterDayjs}>
+            <DateTimePicker
+              renderInput={(props) => (
+                <TextField {...props} sx={{ marginLeft: "1em" }} />
+              )}
+              // label="Select Date & Time"
+              value={value}
+              onChange={(newValue) => {
+                setValue(newValue);
+              }}
+            />
+          </LocalizationProvider>
+          {/* <label className="dimmed-text">{value.toString()}</label> */}
+        </div>
+        <Button
+          sx={{ height: "50px" }}
+          variant="contained"
+          onClick={getOpenRestaurantsHandler}
+        >
+          Get Open Restaurants
+        </Button>
       </div>
-
-      <div>
-        <label>{value.toString()}</label>
-      </div>
-      <button onClick={getOpenRestaurantsHandler}>Get Open Restaurants</button>
+      <div></div>
       {!loading && data && (
         <div>
-          <h3>RESULTS</h3>
+          <h2>RESULTS</h2>
           <div>
             <RestaurantsList data={data} />
           </div>

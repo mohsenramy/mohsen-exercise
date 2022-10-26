@@ -6,8 +6,8 @@ export const ItemGroup = ({ title, items }) => {
   const _items = Object.entries(items);
   console.log({ _items });
   return (
-    <>
-      <div className="item-group-header">{title}</div>
+    <div className="group-container">
+      <h4>{title}</h4>
       {/* <ul>{items ? _items.map((item) => <Item data={item} />) : null}</ul> */}
       <ul>
         {items
@@ -22,6 +22,6 @@ export const ItemGroup = ({ title, items }) => {
           : null}
       </ul>
       {/* <ul>{for (const [key,value] of Object.entries(items)</ul> */}
-    </>
+    </div>
   );
 };

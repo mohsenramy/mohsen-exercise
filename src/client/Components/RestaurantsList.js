@@ -2,11 +2,11 @@ import React from "react";
 
 const RestaurantsList = ({ data }) => {
   return (
-    <div>
+    <ul>
       {data.map((rest) => (
-        <div>{rest.name.toString()}</div>
+        <li>{rest.name.toString()}</li>
       ))}
-    </div>
+    </ul>
   );
 };
 

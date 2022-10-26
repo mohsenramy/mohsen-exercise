@@ -1,3 +1,4 @@
+import { Button } from "@mui/material";
 import axios from "axios";
 import React, { useState } from "react";
 import { ItemGroup } from "../Components/ItemGroup";
@@ -22,15 +23,17 @@ const PostmanEcho = () => {
   return (
     <>
       <h1>Postman Echo</h1>
-      <div>
+      <div className="input-container">
         <div>https://postman-echo.com/get?foo1=bar1&foo2=bar2</div>
-        <button onClick={sendRequestHandler}>Send Request</button>
+        <Button variant="contained" onClick={sendRequestHandler}>
+          Send Request
+        </Button>
       </div>
       <div>
-        <h1>Response</h1>
+        <h2>Response</h2>
         {!loading && data && (
           <div>
-            <h3>status: {resStatus}</h3>
+            <h3 className="subtitle success">status: {resStatus}</h3>
             {data.args && <ItemGroup title={"Arguments"} items={data.args} />}
             {data.headers && (
               <ItemGroup title={"Headers"} items={data.headers} />
